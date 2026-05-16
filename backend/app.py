@@ -21,7 +21,7 @@ GEMINI_API_KEY = os.getenv("VITE_GEMINI_API_KEY")
 
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel("gemini-1.5-flash-lite")
+    model = genai.GenerativeModel("gemini-1.5-flash")
 else:
     logger.warning("VITE_GEMINI_API_KEY not found in environment")
 
@@ -163,9 +163,14 @@ def ipl_live_score():
 
 # --- AI Agents ---
 def extract_json(text):
-    if "```json" in text:
-        text = text.split("```json")[1].split("```")[0]
-    return json.loads(text.strip())
+    try:
+        # Match content between ```json and ``` or between { and }
+        match = re.search(r'(\{.*\})', text, re.DOTALL)
+        if match:
+            return json.loads(match.group(1).strip())
+        return json.loads(text.strip())
+    except Exception:
+        raise ValueError("Failed to extract valid JSON from Gemini response")
 
 @app.route("/api/commentary", methods=["POST"])
 def get_ai_commentary():
@@ -173,9 +178,9 @@ def get_ai_commentary():
     if not data or not GEMINI_API_KEY:
         return jsonify({"commentary": "Agent warming up..."})
     try:
-        prompt = f"Match Update: {data.get('team_1')} vs {data.get('team_2')}. Score: {data.get('score_1')}. Provide 1-line witty IPL commentary and a MANIFESTING ticker."
+        prompt = f"IPL Live Match Context: {data.get('team_1')} vs {data.get('team_2')}. Score: {data.get('score_1')}. Provide a 2-line witty tactical commentary and a MANIFESTING ticker. Be specific to the match situation."
         response = model.generate_content(prompt)
-        return jsonify({"commentary": response.text})
+        return jsonify({"commentary": response.text.strip()})
     except Exception as e:
         logger.error(f"Commentary Error: {e}")
         return jsonify({"commentary": "The stadium vibe is intense!"})
@@ -186,7 +191,7 @@ def get_win_probability():
     if not data or not GEMINI_API_KEY:
         return jsonify({"team_1_prob": 50, "team_2_prob": 50})
     try:
-        prompt = f"Match Situation: {data.get('team_1')} ({data.get('score_1')}) vs {data.get('team_2')} ({data.get('score_2')}). Return JSON: {{\"team_1_prob\": X, \"team_2_prob\": Y}}"
+        prompt = f"Analyze Win Probability: {data.get('team_1')} ({data.get('score_1')}) vs {data.get('team_2')} ({data.get('score_2')}). Return ONLY a JSON object: {{\"team_1_prob\": X, \"team_2_prob\": Y}}"
         response = model.generate_content(prompt)
         return jsonify(extract_json(response.text))
     except Exception as e:
