@@ -45,6 +45,7 @@ function App() {
   const [showSquadModal, setShowSquadModal] = useState(false);
   const [showChallengeModal, setShowChallengeModal] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
   const prevScoreRef = useRef<string | null>(null);
 
@@ -160,7 +161,11 @@ function App() {
       <div className={`sidebar-overlay ${isMenuOpen ? 'open' : ''}`} onClick={() => setIsMenuOpen(false)}></div>
 
       {isMock && (
-        <div style={{ position: 'fixed', bottom: '2rem', left: '50%', transform: 'translateX(-50%)', zIndex: 9999, background: 'var(--color-card)', color: 'var(--color-accent)', padding: '0.85rem 2rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: 900, border: '1px solid var(--color-accent)', borderRadius: '4px', boxShadow: '0 0 30px rgba(56, 189, 248, 0.2)', letterSpacing: '1.5px', backdropFilter: 'blur(10px)' }}>
+        <div 
+          onClick={() => setShowInfoModal(true)}
+          style={{ position: 'fixed', bottom: '2rem', left: '50%', transform: 'translateX(-50%)', zIndex: 9999, background: 'var(--color-card)', color: 'var(--color-accent)', padding: '0.85rem 2rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: 900, border: '1px solid var(--color-accent)', borderRadius: '4px', boxShadow: '0 0 30px rgba(56, 189, 248, 0.2)', letterSpacing: '1.5px', backdropFilter: 'blur(10px)', cursor: 'pointer' }}
+          title="Click for System Intel"
+        >
           ⚠️ MOCK DATA ACTIVE • REAL-TIME SYNC ON
         </div>
       )}
@@ -362,6 +367,35 @@ function App() {
 
         </div>
       </main>
+      {/* System Intel Modal */}
+      {showInfoModal && (
+        <div className="modal-overlay" onClick={() => setShowInfoModal(false)}>
+          <div className="modal-content info-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>🏟️ Digital Stadium Intelligence</h3>
+              <button className="close-btn" onClick={() => setShowInfoModal(false)}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <div className="intel-section">
+                <h4>🔴 Live Match Mode</h4>
+                <p>When an IPL match is live, the system automatically switches to 10-second polling. AI Agents ingest real ball-by-ball data to provide tactical strategy and witty commentary.</p>
+              </div>
+              <div className="intel-section">
+                <h4>🧪 Simulation Mode (Active Now)</h4>
+                <p>During off-hours, the dashboard runs in <strong>Hybrid Simulation Mode</strong>. This uses pre-loaded match scripts to ensure reviewers can experience the full "Electric Night" UI and AI Agent interactions without waiting for a live game.</p>
+              </div>
+              <div className="intel-badge">
+                <span>✓ Auto-Sync Active</span>
+                <span>✓ Gemini 1.5 Flash Enabled</span>
+                <span>✓ Real-Time Scraper Ready</span>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="primary-btn" onClick={() => setShowInfoModal(false)}>Got it, Coach!</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
