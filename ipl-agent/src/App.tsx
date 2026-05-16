@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { api } from './services/api';
 import type { LiveScore, PointsTable } from './services/api';
 import { geminiAgent } from './services/gemini';
