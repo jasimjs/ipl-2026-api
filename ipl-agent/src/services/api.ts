@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://ipl-2026-api.onrender.com';
 
 export interface LiveScore {
   status: string;
@@ -45,7 +45,7 @@ export interface Squad {
 
 export const api = {
   async getLiveScore(): Promise<LiveScore> {
-    const response = await fetch(`${BASE_URL}/ipl-2026-live-score-s2`);
+    const response = await fetch(`${BASE_URL}/ipl-live-score`);
     if (!response.ok) throw new Error('Failed to fetch live scores');
     return response.json();
   },

@@ -102,7 +102,9 @@ pip install -r requirements.txt
 python app.py
 ```
 
-The API will be live on `http://localhost:5000`.
+### Production API
+The live backend is hosted at:
+- **Backend Hub (Flask)**: [https://ipl-2026-api.onrender.com](https://ipl-2026-api.onrender.com)
 
 For production-like serving locally:
 
