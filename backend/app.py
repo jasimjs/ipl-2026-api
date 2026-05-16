@@ -275,6 +275,11 @@ def extract_json(text):
     except Exception:
         raise ValueError("Failed to extract valid JSON from Gemini response")
 
+    except Exception as e:
+        logger.error(f"Strategy Error: {e}")
+        print(f"DEBUG AI ERROR (Strategy): {e}")
+        return jsonify({"strategy": "Stick to basics, keep the pressure!"})
+
 @app.route("/api/commentary", methods=["POST"])
 def get_ai_commentary():
     data = request.json
@@ -282,10 +287,19 @@ def get_ai_commentary():
         return jsonify({"commentary": "Agent warming up..."})
     try:
         prompt = f"IPL Live Match Context: {data.get('team_1')} vs {data.get('team_2')}. Score: {data.get('score_1')}. Provide a 2-line witty tactical commentary and a MANIFESTING ticker. Be specific to the match situation."
-        response = model.generate_content(prompt)
+        response = model.generate_content(
+            prompt,
+            safety_settings={
+                "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE",
+                "HARM_CATEGORY_HATE_SPEECH": "BLOCK_NONE",
+                "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE",
+                "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
+            }
+        )
         return jsonify({"commentary": response.text.strip()})
     except Exception as e:
         logger.error(f"Commentary Error: {e}")
+        print(f"DEBUG AI ERROR (Commentary): {e}")
         return jsonify({"commentary": "The stadium vibe is intense!"})
 
 @app.route("/api/win-probability", methods=["POST"])
@@ -295,10 +309,19 @@ def get_win_probability():
         return jsonify({"team_1_prob": 50, "team_2_prob": 50})
     try:
         prompt = f"Analyze Win Probability: {data.get('team_1')} ({data.get('score_1')}) vs {data.get('team_2')} ({data.get('score_2')}). Return ONLY a JSON object: {{\"team_1_prob\": X, \"team_2_prob\": Y}}"
-        response = model.generate_content(prompt)
+        response = model.generate_content(
+            prompt,
+            safety_settings={
+                "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE",
+                "HARM_CATEGORY_HATE_SPEECH": "BLOCK_NONE",
+                "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE",
+                "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
+            }
+        )
         return jsonify(extract_json(response.text))
     except Exception as e:
         logger.error(f"Win Prob Error: {e}")
+        print(f"DEBUG AI ERROR (WinProb): {e}")
         return jsonify({"team_1_prob": 50, "team_2_prob": 50})
 
 @app.route("/api/strategy", methods=["POST"])
@@ -308,10 +331,19 @@ def get_strategy():
         return jsonify({"strategy": "Analyzing tactics..."})
     try:
         prompt = f"Match Context: {data.get('team_1')} vs {data.get('team_2')}. Score: {data.get('score_1')}. Give 2 concise bowling tactical suggestions."
-        response = model.generate_content(prompt)
-        return jsonify({"strategy": response.text})
+        response = model.generate_content(
+            prompt,
+            safety_settings={
+                "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE",
+                "HARM_CATEGORY_HATE_SPEECH": "BLOCK_NONE",
+                "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE",
+                "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
+            }
+        )
+        return jsonify({"strategy": response.text.strip()})
     except Exception as e:
         logger.error(f"Strategy Error: {e}")
+        print(f"DEBUG AI ERROR (Strategy): {e}")
         return jsonify({"strategy": "Stick to basics, keep the pressure!"})
 
 @app.route("/api/gamification", methods=["POST"])
