@@ -42,6 +42,32 @@ HEADERS = {
 }
 HTTP_TIMEOUT = 15.0
 
+WINNERS = {
+    "2024": "Kolkata Knight Riders",
+    "2023": "Chennai Super Kings",
+    "2022": "Gujarat Titans",
+    "2021": "Chennai Super Kings",
+    "2020": "Mumbai Indians",
+    "2019": "Mumbai Indians",
+    "2018": "Chennai Super Kings",
+    "2017": "Mumbai Indians",
+    "2016": "Sunrisers Hyderabad",
+    "2015": "Mumbai Indians",
+    "2014": "Kolkata Knight Riders",
+    "2013": "Mumbai Indians",
+    "2012": "Kolkata Knight Riders",
+    "2011": "Chennai Super Kings",
+    "2010": "Chennai Super Kings",
+    "2009": "Deccan Chargers",
+    "2008": "Rajasthan Royals"
+}
+
+TEAM_MAP = {
+    "mi": "mumbai-indians", "csk": "chennai-super-kings", "rcb": "royal-challengers-bangalore",
+    "kkr": "kolkata-knight-riders", "srh": "sunrisers-hyderabad", "dc": "delhi-capitals",
+    "pbks": "punjab-kings", "rr": "rajasthan-royals", "gt": "gujarat-titans", "lsg": "lucknow-super-giants"
+}
+
 def today_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
@@ -160,6 +186,83 @@ def ipl_live_score():
     except Exception as e:
         logger.error(f"Live Score error: {e}")
         return error_payload("Server Error", str(e), "Try again later.")
+
+# --- Crex (S2) ---
+def _crex_match(card) -> dict:
+    try:
+        team_nodes = card.css("div.team-name")
+        score_nodes = card.css("div.team-score")
+        if len(team_nodes) < 2: return None
+        status = safe_text(card.css_first("div.match-status"), "Upcoming")
+        return {
+            "status": status,
+            "team_1": safe_text(team_nodes[0]), "score_1": safe_text(score_nodes[0]) if len(score_nodes) > 0 else "N.A",
+            "team_2": safe_text(team_nodes[1]), "score_2": safe_text(score_nodes[1]) if len(score_nodes) > 1 else "N.A",
+            "result": safe_text(card.css_first("div.match-result"))
+        }
+    except: return None
+
+@app.route(f"/ipl-{SEASON}-live-score-s2")
+@app.route("/ipl-live-score-s2")
+def ipl_live_score_s2():
+    url = f"https://crex.live/fixtures/match-list/{CREX_SERIES_SLUG}"
+    try:
+        response = http_get(url)
+        tree = HTMLParser(response.text)
+        cards = tree.css("li.match-card")
+        matches = {}
+        for i, card in enumerate(cards, 1):
+            entry = _crex_match(card)
+            if entry: matches[f"Match {i}"] = entry
+        return jsonify({"status_code": 200, "source": "crex", "matches": matches})
+    except Exception as e:
+        return error_payload("Crex Error", str(e), "Source unavailable.")
+
+# --- Cricbuzz (S3) ---
+def _cricbuzz_match(card) -> dict:
+    try:
+        teams = card.css("div.cb-lv-scrs-col")
+        if len(teams) < 1: return None
+        # Simplified parser for demonstration
+        text = card.text(deep=True, separator=" ")
+        return {"status": "Live", "info": text.strip()}
+    except: return None
+
+@app.route(f"/ipl-{SEASON}-live-score-s3")
+@app.route("/ipl-live-score-s3")
+def ipl_live_score_s3():
+    url = "https://www.cricbuzz.com/cricket-series/9241/indian-premier-league-2026/matches"
+    try:
+        response = http_get(url)
+        tree = HTMLParser(response.text)
+        cards = tree.css("div.cb-mtch-lst")
+        matches = {}
+        for i, card in enumerate(cards, 1):
+            matches[f"Match {i}"] = {"info": card.text(strip=True)}
+        return jsonify({"status_code": 200, "source": "cricbuzz", "matches": matches})
+    except Exception as e:
+        return error_payload("Cricbuzz Error", str(e), "Source unavailable.")
+
+# --- Squads ---
+@app.route("/squad/<team_code>")
+def get_squad(team_code):
+    team_slug = TEAM_MAP.get(team_code.lower())
+    if not team_slug:
+        return error_payload("Invalid Team", "Code not found.", "Use mi, csk, rcb, etc.")
+    url = f"https://www.sportskeeda.com/go/ipl/squads/{team_slug}"
+    try:
+        response = http_get(url)
+        tree = HTMLParser(response.text)
+        players = tree.css("div.squad-player-name")
+        squad = {f"Player {i}": p.text(strip=True) for i, p in enumerate(players, 1)}
+        return jsonify({"status_code": 200, "team": team_slug, "squad": squad})
+    except Exception as e:
+        return error_payload("Squad Error", str(e), "Try again later.")
+
+# --- Winners ---
+@app.route("/ipl-winners")
+def ipl_winners():
+    return jsonify({"status_code": 200, "winners": WINNERS})
 
 # --- AI Agents ---
 def extract_json(text):
