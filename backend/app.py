@@ -280,11 +280,24 @@ def extract_json(text):
         print(f"DEBUG AI ERROR (Strategy): {e}")
         return jsonify({"strategy": "Stick to basics, keep the pressure!"})
 
+# --- AI Agents Cache ---
+ai_cache = {
+    "commentary": {"key": None, "val": None},
+    "win_prob": {"key": None, "val": None},
+    "strategy": {"key": None, "val": None}
+}
+
 @app.route("/api/commentary", methods=["POST"])
 def get_ai_commentary():
     data = request.json
     if not data or not GEMINI_API_KEY:
         return jsonify({"commentary": "Agent warming up..."})
+    
+    # Cache Key: Teams + Score
+    cache_key = f"{data.get('team_1')}_{data.get('team_2')}_{data.get('score_1')}"
+    if ai_cache["commentary"]["key"] == cache_key:
+        return jsonify({"commentary": ai_cache["commentary"]["val"]})
+
     try:
         prompt = f"IPL Live Match Context: {data.get('team_1')} vs {data.get('team_2')}. Score: {data.get('score_1')}. Provide a 2-line witty tactical commentary and a MANIFESTING ticker. Be specific to the match situation."
         response = model.generate_content(
@@ -296,7 +309,9 @@ def get_ai_commentary():
                 "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
             }
         )
-        return jsonify({"commentary": response.text.strip()})
+        ai_cache["commentary"]["key"] = cache_key
+        ai_cache["commentary"]["val"] = response.text.strip()
+        return jsonify({"commentary": ai_cache["commentary"]["val"]})
     except Exception as e:
         logger.error(f"Commentary Error: {e}")
         print(f"DEBUG AI ERROR (Commentary): {e}")
@@ -307,6 +322,11 @@ def get_win_probability():
     data = request.json
     if not data or not GEMINI_API_KEY:
         return jsonify({"team_1_prob": 50, "team_2_prob": 50})
+    # Cache Key: Teams + Scores
+    cache_key = f"{data.get('team_1')}_{data.get('score_1')}_{data.get('team_2')}_{data.get('score_2')}"
+    if ai_cache["win_prob"]["key"] == cache_key:
+        return jsonify(ai_cache["win_prob"]["val"])
+
     try:
         prompt = f"Analyze Win Probability: {data.get('team_1')} ({data.get('score_1')}) vs {data.get('team_2')} ({data.get('score_2')}). Return ONLY a JSON object: {{\"team_1_prob\": X, \"team_2_prob\": Y}}"
         response = model.generate_content(
@@ -318,7 +338,9 @@ def get_win_probability():
                 "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
             }
         )
-        return jsonify(extract_json(response.text))
+        ai_cache["win_prob"]["key"] = cache_key
+        ai_cache["win_prob"]["val"] = extract_json(response.text)
+        return jsonify(ai_cache["win_prob"]["val"])
     except Exception as e:
         logger.error(f"Win Prob Error: {e}")
         print(f"DEBUG AI ERROR (WinProb): {e}")
@@ -329,6 +351,11 @@ def get_strategy():
     data = request.json
     if not data or not GEMINI_API_KEY:
         return jsonify({"strategy": "Analyzing tactics..."})
+    # Cache Key: Teams + Score
+    cache_key = f"{data.get('team_1')}_{data.get('team_2')}_{data.get('score_1')}"
+    if ai_cache["strategy"]["key"] == cache_key:
+        return jsonify({"strategy": ai_cache["strategy"]["val"]})
+
     try:
         prompt = f"Match Context: {data.get('team_1')} vs {data.get('team_2')}. Score: {data.get('score_1')}. Give 2 concise bowling tactical suggestions."
         response = model.generate_content(
@@ -340,7 +367,9 @@ def get_strategy():
                 "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
             }
         )
-        return jsonify({"strategy": response.text.strip()})
+        ai_cache["strategy"]["key"] = cache_key
+        ai_cache["strategy"]["val"] = response.text.strip()
+        return jsonify({"strategy": ai_cache["strategy"]["val"]})
     except Exception as e:
         logger.error(f"Strategy Error: {e}")
         print(f"DEBUG AI ERROR (Strategy): {e}")
