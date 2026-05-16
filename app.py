@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), "..", "ipl-agent", ".env"))
+load_dotenv()
 GEMINI_API_KEY = os.getenv("VITE_GEMINI_API_KEY")
 
 if GEMINI_API_KEY:
