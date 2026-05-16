@@ -21,7 +21,7 @@ GEMINI_API_KEY = os.getenv("VITE_GEMINI_API_KEY")
 
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel("gemini-2.0-flash")
 else:
     logger.warning("VITE_GEMINI_API_KEY not found in environment")
 
